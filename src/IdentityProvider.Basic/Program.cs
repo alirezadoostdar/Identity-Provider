@@ -52,5 +52,5 @@ app.Run();
 
 public class ApiKeyAuthenticationOptions: AuthenticationSchemeOptions
 {
-	public string Head
+	
 }
