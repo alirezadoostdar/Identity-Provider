@@ -2,16 +2,37 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 
 builder.Services.AddAuthentication()
-				.AddCookie(option =>
-				{
-					option.Cookie.Name = "MehrAccounting.com";
-				});
+				.AddCookie();
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddControllers();
+
+builder.Services.AddDbContext<IdentityDbContext>(configure => configure.UseInMemoryDatabase("identity"));
+
+builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+{
+	options.User.RequireUniqueEmail = true;
+	options.Password.RequireDigit = false;
+	options.Password.RequireLowercase = false;
+	options.Password.RequireUppercase = false;
+	options.Password.RequiredLength = 4;
+	options.Password.RequireNonAlphanumeric = false;
+	options.SignIn.RequireConfirmedPhoneNumber = false;
+	options.SignIn.RequireConfirmedAccount = false;
+	options.SignIn.RequireConfirmedEmail = true;
+}).AddEntityFrameworkStores<IdentityDbContext>()
+.AddDefaultTokenProviders();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -27,30 +48,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
-
-
-
-app.MapGet("/Login", async (HttpContext httpContext) =>
-{
-	var claims = new List<Claim>()
-	{
-		new Claim(ClaimTypes.Name, "Alireza")
-	};
-	var identityClaims = new ClaimsIdentity(claims,CookieAuthenticationDefaults.AuthenticationScheme);
-	var userPrincipal = new ClaimsPrincipal(identityClaims);
-
-	await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, userPrincipal);
-	return Results.Ok("Thank You");
-});
-
-app.MapGet("/UserName", (HttpContext httpContext, IDataProtectionProvider provider) =>
-{
-	return httpContext.User.FindFirst("username").Value;
-});
-
+app.MapControllers();
 app.Run();
 
-public class ApiKeyAuthenticationOptions: AuthenticationSchemeOptions
-{
-	const string Default = "ali";
-}
+
